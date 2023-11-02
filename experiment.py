@@ -99,3 +99,32 @@ base_mlp_confusion = confusion_matrix(target_test, base_mlp_predictions)
 print("Base-MLP Accuracy:", base_mlp_accuracy)
 print("\nClassification Report:\n", base_mlp_report)
 print("\nConfusion Matrix:\n", base_mlp_confusion)
+
+
+# ---- Top MLP ---- #
+
+mlp_param_grid = {
+    'activation': ['logistic', 'tanh', 'relu'],
+    'hidden_layer_sizes': [(30, 50), (10, 10, 10)],
+    'solver': ['adam', 'sgd']
+}
+
+mlp_grid_search = GridSearchCV(MLPClassifier(), mlp_param_grid, cv=5, scoring='accuracy', n_jobs=-1)
+
+mlp_grid_search.fit(features_train, target_train)
+
+mlp_best_params = mlp_grid_search.best_params_
+
+top_mlp = MLPClassifier(**mlp_best_params)
+top_mlp.fit(features_train, target_train)
+
+top_mlp_predictions = top_mlp.predict(features_test)
+
+top_mlp_accuracy = accuracy_score(target_test, top_mlp_predictions)
+top_mlp_report = classification_report(target_test, top_mlp_predictions)
+top_mlp_confusion = confusion_matrix(target_test, top_mlp_predictions)
+
+print("Top-MLP Accuracy:", top_mlp_accuracy)
+print("\nClassification Report:\n", top_mlp_report)
+print("\nConfusion Matrix:\n", top_mlp_confusion)
+print("\nBest Parameters:\n", mlp_best_params)
