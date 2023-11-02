@@ -1,7 +1,9 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.neural_network import MLPClassifier
 
 def convert_to_one_hot(df, categorical_columns):
     dummies_df = pd.get_dummies(df, columns=categorical_columns, dtype=int)
@@ -37,3 +39,20 @@ target = penguins_df_1h["species"]
 features_train, features_test, target_train, target_test = train_test_split(
     features, target
 )
+
+#  ---- Base Decision Tree ---- #
+
+base_dt = DecisionTreeClassifier()
+
+base_dt.fit(features_train, target_train)
+
+base_dt_predictions = base_dt.predict(features_test)
+
+base_dt_accuracy = accuracy_score(target_test, base_dt_predictions)
+base_dt_report = classification_report(target_test, base_dt_predictions)
+base_dt_confusion = confusion_matrix(target_test, base_dt_predictions)
+
+plt.figure(figsize=(20, 10))
+plot_tree(base_dt, filled=True, feature_names=features.columns, class_names=target.unique(), rounded=True)
+plt.title("Base-DT Decision Tree")
+plt.show()
