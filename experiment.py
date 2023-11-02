@@ -9,13 +9,11 @@ def convert_to_one_hot(df, categorical_columns):
     dummies_df = pd.get_dummies(df, columns=categorical_columns, dtype=int)
     return dummies_df
 
-
 def convert_to_categorical_codes(df, categorical_columns):
     for column in categorical_columns:
         cat_column = pd.Categorical(df[column])
         df[column] = cat_column.codes
     return df
-
 
 penguins_df = pd.read_csv("penguins.csv")
 
@@ -29,9 +27,9 @@ penguins_df_cat.to_csv("transformed_penguins_categorical.csv", index=False)
 
 species_counts = penguins_df_1h["species"].value_counts(normalize=True) * 100
 species_counts.plot(kind="bar", color=["orange", "blue", "limegreen"])
-plt.title("Distribution of Penguin Species")
-plt.ylabel("Percentage")
-plt.xlabel("Species")
+# plt.title("Distribution of Penguin Species")
+# plt.ylabel("Percentage")
+# plt.xlabel("Species")
 
 features = penguins_df_1h.drop("species", axis=1)
 target = penguins_df_1h["species"]
@@ -48,14 +46,10 @@ base_dt.fit(features_train, target_train)
 
 base_dt_predictions = base_dt.predict(features_test)
 
-base_dt_accuracy = accuracy_score(target_test, base_dt_predictions)
-base_dt_report = classification_report(target_test, base_dt_predictions)
-base_dt_confusion = confusion_matrix(target_test, base_dt_predictions)
-
-plt.figure(figsize=(20, 10))
-plot_tree(base_dt, filled=True, feature_names=features.columns, class_names=target.unique(), rounded=True)
-plt.title("Base-DT Decision Tree")
-plt.show()
+# plt.figure(figsize=(20, 10))
+# plot_tree(base_dt, filled=True, feature_names=features.columns, class_names=target.unique(), rounded=True)
+# plt.title("Base-DT Decision Tree")
+# plt.show()
 
 #  ---- Top Decision Tree ---- #
 
@@ -76,13 +70,10 @@ top_dt.fit(features_train, target_train)
 
 top_dt_predictions = top_dt.predict(features_test)
 
-top_dt_accuracy = accuracy_score(target_test, top_dt_predictions)
-top_dt_report = classification_report(target_test, top_dt_predictions)
-top_dt_confusion = confusion_matrix(target_test, top_dt_predictions)
-plt.figure(figsize=(20, 10))
-plot_tree(top_dt, filled=True, feature_names=features.columns, class_names=target.unique(), rounded=True)
-plt.title("Top-DT Decision Tree")
-plt.show()
+# plt.figure(figsize=(20, 10))
+# plot_tree(top_dt, filled=True, feature_names=features.columns, class_names=target.unique(), rounded=True)
+# plt.title("Top-DT Decision Tree")
+# plt.show()
 
 #  ---- Base MLP ---- #
 
@@ -91,15 +82,6 @@ base_mlp = MLPClassifier(hidden_layer_sizes=(100, 100), activation='logistic', s
 base_mlp.fit(features_train, target_train)
 
 base_mlp_predictions = base_mlp.predict(features_test)
-
-base_mlp_accuracy = accuracy_score(target_test, base_mlp_predictions)
-base_mlp_report = classification_report(target_test, base_mlp_predictions)
-base_mlp_confusion = confusion_matrix(target_test, base_mlp_predictions)
-
-print("Base-MLP Accuracy:", base_mlp_accuracy)
-print("\nClassification Report:\n", base_mlp_report)
-print("\nConfusion Matrix:\n", base_mlp_confusion)
-
 
 # ---- Top MLP ---- #
 
@@ -120,11 +102,32 @@ top_mlp.fit(features_train, target_train)
 
 top_mlp_predictions = top_mlp.predict(features_test)
 
-top_mlp_accuracy = accuracy_score(target_test, top_mlp_predictions)
-top_mlp_report = classification_report(target_test, top_mlp_predictions)
-top_mlp_confusion = confusion_matrix(target_test, top_mlp_predictions)
+def write_performance_to_file(model_name, predictions, true_values, best_params=None, filename="penguin-performance.txt"):
+    with open(filename, "a") as file:
 
-print("Top-MLP Accuracy:", top_mlp_accuracy)
-print("\nClassification Report:\n", top_mlp_report)
-print("\nConfusion Matrix:\n", top_mlp_confusion)
-print("\nBest Parameters:\n", mlp_best_params)
+        file.write("- - - - -" * 20 + "\n")
+        file.write(f"\n[A]\nModel: {model_name}\n")
+
+        # for top-DT and top-MLP
+        if best_params:
+            file.write(f"Best Parameters: {best_params}\n")
+        
+        file.write("\n[B]\nConfusion Matrix:\n")
+        confusion = confusion_matrix(true_values, predictions)
+        file.write(str(confusion) + "\n")
+        
+        report = classification_report(true_values, predictions, output_dict=True)
+        file.write("\n[C]\nPrecision, Recall, F1-measure for each class:\n")
+        for label, metrics in report.items():
+            if label not in ['accuracy', 'macro avg', 'weighted avg']:
+                file.write(f"Class {label} - Precision: {metrics['precision']:.2f}, Recall: {metrics['recall']:.2f}, F1-measure: {metrics['f1-score']:.2f}\n")
+        
+        file.write("\n[D]\nModel-wide Metrics:\n")
+        file.write(f"Accuracy: {report['accuracy']:.2f}\n")
+        file.write(f"Macro-average F1: {report['macro avg']['f1-score']:.2f}\n")
+        file.write(f"Weighted-average F1: {report['weighted avg']['f1-score']:.2f}\n\n")
+
+write_performance_to_file("Base-DT", base_dt_predictions, target_test)
+write_performance_to_file("Top-DT", top_dt_predictions, target_test, best_params=best_params)
+write_performance_to_file("Base-MLP", base_mlp_predictions, target_test)
+write_performance_to_file("Top-MLP", top_mlp_predictions, target_test, best_params=mlp_best_params)
