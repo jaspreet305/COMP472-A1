@@ -5,6 +5,7 @@ from sklearn.tree import DecisionTreeClassifier, plot_tree
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.neural_network import MLPClassifier
 
+
 def convert_to_one_hot(df, categorical_columns):
     dummies_df = pd.get_dummies(df, columns=categorical_columns, dtype=int)
     return dummies_df
@@ -53,6 +54,47 @@ base_dt_report = classification_report(target_test, base_dt_predictions)
 base_dt_confusion = confusion_matrix(target_test, base_dt_predictions)
 
 plt.figure(figsize=(20, 10))
-plot_tree(base_dt, filled=True, feature_names=features.columns, class_names=target.unique(), rounded=True)
+plot_tree(
+    base_dt,
+    filled=True,
+    feature_names=features.columns,
+    class_names=target.unique(),
+    rounded=True,
+)
 plt.title("Base-DT Decision Tree")
+plt.show()
+
+#  ---- Top Decision Tree ---- #
+
+param_grid = {
+    "criterion": ["gini", "entropy"],
+    "max_depth": [None, 10, 15],
+    "min_samples_split": [7, 8, 9],
+}
+
+grid_search = GridSearchCV(
+    DecisionTreeClassifier(), param_grid, cv=5, scoring="accuracy", n_jobs=-1
+)
+
+grid_search.fit(features_train, target_train)
+
+best_params = grid_search.best_params_
+
+top_dt = DecisionTreeClassifier(**best_params)
+top_dt.fit(features_train, target_train)
+
+top_dt_predictions = top_dt.predict(features_test)
+
+top_dt_accuracy = accuracy_score(target_test, top_dt_predictions)
+top_dt_report = classification_report(target_test, top_dt_predictions)
+top_dt_confusion = confusion_matrix(target_test, top_dt_predictions)
+plt.figure(figsize=(20, 10))
+plot_tree(
+    top_dt,
+    filled=True,
+    feature_names=features.columns,
+    class_names=target.unique(),
+    rounded=True,
+)
+plt.title("Top-DT Decision Tree")
 plt.show()
