@@ -131,3 +131,42 @@ write_performance_to_file("Base-DT", base_dt_predictions, target_test)
 write_performance_to_file("Top-DT", top_dt_predictions, target_test, best_params=best_params)
 write_performance_to_file("Base-MLP", base_mlp_predictions, target_test)
 write_performance_to_file("Top-MLP", top_mlp_predictions, target_test, best_params=mlp_best_params)
+
+# ---- ABALONE ----
+
+# Function to convert categorical columns to one-hot encoded columns
+def convert_to_one_hot(df, categorical_columns):
+    return pd.get_dummies(df, columns=categorical_columns, dtype=int)
+
+
+# Abalone Data Preprocessing
+abalone_df = pd.read_csv("abalone.csv")
+abalone_df_1h = convert_to_one_hot(abalone_df, ["Type"])
+abalone_df_1h.to_csv("transformed_abalone_1h.csv", index=False)
+
+features_abalone = abalone_df_1h.drop(["Type_M", "Type_F", "Type_I"], axis=1)
+target_abalone = abalone_df["Type"]
+(
+    features_train_abalone,
+    features_test_abalone,
+    target_train_abalone,
+    target_test_abalone,
+) = train_test_split(features_abalone, target_abalone)
+
+#  ---- Base Decision Tree ---- #
+
+clf_base_dt = DecisionTreeClassifier()
+clf_base_dt.fit(features_train_abalone, target_train_abalone)
+base_dt_pred = clf_base_dt.predict(features_test_abalone)
+
+# Visualization for Base-DT
+plt.figure(figsize=(20, 10))
+plot_tree(
+    clf_base_dt,
+    filled=True,
+    feature_names=features_abalone.columns,
+    class_names=clf_base_dt.classes_,
+    rounded=True,
+    max_depth=5,
+)
+plt.show()
