@@ -5,15 +5,18 @@ from sklearn.tree import DecisionTreeClassifier, plot_tree
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.neural_network import MLPClassifier
 
+
 def convert_to_one_hot(df, categorical_columns):
     dummies_df = pd.get_dummies(df, columns=categorical_columns, dtype=int)
     return dummies_df
+
 
 def convert_to_categorical_codes(df, categorical_columns):
     for column in categorical_columns:
         cat_column = pd.Categorical(df[column])
         df[column] = cat_column.codes
     return df
+
 
 penguins_df = pd.read_csv("penguins.csv")
 
@@ -54,12 +57,14 @@ base_dt_predictions = base_dt.predict(features_test)
 #  ---- Top Decision Tree ---- #
 
 param_grid = {
-    'criterion': ['gini', 'entropy'],
-    'max_depth': [None, 10, 15],
-    'min_samples_split': [7, 8, 9],
+    "criterion": ["gini", "entropy"],
+    "max_depth": [None, 10, 15],
+    "min_samples_split": [7, 8, 9],
 }
 
-grid_search = GridSearchCV(DecisionTreeClassifier(), param_grid, cv=5, scoring='accuracy', n_jobs=-1)
+grid_search = GridSearchCV(
+    DecisionTreeClassifier(), param_grid, cv=5, scoring="accuracy", n_jobs=-1
+)
 
 grid_search.fit(features_train, target_train)
 
@@ -77,7 +82,13 @@ top_dt_predictions = top_dt.predict(features_test)
 
 #  ---- Base MLP ---- #
 
-base_mlp = MLPClassifier(hidden_layer_sizes=(100, 100), activation='logistic', solver='sgd', alpha=0.0001, batch_size='auto')
+base_mlp = MLPClassifier(
+    hidden_layer_sizes=(100, 100),
+    activation="logistic",
+    solver="sgd",
+    alpha=0.0001,
+    batch_size="auto",
+)
 
 base_mlp.fit(features_train, target_train)
 
@@ -86,12 +97,14 @@ base_mlp_predictions = base_mlp.predict(features_test)
 # ---- Top MLP ---- #
 
 mlp_param_grid = {
-    'activation': ['logistic', 'tanh', 'relu'],
-    'hidden_layer_sizes': [(30, 50), (10, 10, 10)],
-    'solver': ['adam', 'sgd']
+    "activation": ["logistic", "tanh", "relu"],
+    "hidden_layer_sizes": [(30, 50), (10, 10, 10)],
+    "solver": ["adam", "sgd"],
 }
 
-mlp_grid_search = GridSearchCV(MLPClassifier(), mlp_param_grid, cv=5, scoring='accuracy', n_jobs=-1)
+mlp_grid_search = GridSearchCV(
+    MLPClassifier(), mlp_param_grid, cv=5, scoring="accuracy", n_jobs=-1
+)
 
 mlp_grid_search.fit(features_train, target_train)
 
@@ -102,37 +115,51 @@ top_mlp.fit(features_train, target_train)
 
 top_mlp_predictions = top_mlp.predict(features_test)
 
-def write_performance_to_file(model_name, predictions, true_values, best_params=None, filename="penguin-performance.txt"):
-    with open(filename, "a") as file:
 
+def write_performance_to_file(
+    model_name,
+    predictions,
+    true_values,
+    best_params=None,
+    filename="penguin-performance.txt",
+):
+    with open(filename, "a") as file:
         file.write("- - - - -" * 20 + "\n")
         file.write(f"\n[A]\nModel: {model_name}\n")
 
         # for top-DT and top-MLP
         if best_params:
             file.write(f"Best Parameters: {best_params}\n")
-        
+
         file.write("\n[B]\nConfusion Matrix:\n")
         confusion = confusion_matrix(true_values, predictions)
         file.write(str(confusion) + "\n")
-        
+
         report = classification_report(true_values, predictions, output_dict=True)
         file.write("\n[C]\nPrecision, Recall, F1-measure for each class:\n")
         for label, metrics in report.items():
-            if label not in ['accuracy', 'macro avg', 'weighted avg']:
-                file.write(f"Class {label} - Precision: {metrics['precision']:.2f}, Recall: {metrics['recall']:.2f}, F1-measure: {metrics['f1-score']:.2f}\n")
-        
+            if label not in ["accuracy", "macro avg", "weighted avg"]:
+                file.write(
+                    f"Class {label} - Precision: {metrics['precision']:.2f}, Recall: {metrics['recall']:.2f}, F1-measure: {metrics['f1-score']:.2f}\n"
+                )
+
         file.write("\n[D]\nModel-wide Metrics:\n")
         file.write(f"Accuracy: {report['accuracy']:.2f}\n")
         file.write(f"Macro-average F1: {report['macro avg']['f1-score']:.2f}\n")
         file.write(f"Weighted-average F1: {report['weighted avg']['f1-score']:.2f}\n\n")
 
+
 write_performance_to_file("Base-DT", base_dt_predictions, target_test)
-write_performance_to_file("Top-DT", top_dt_predictions, target_test, best_params=best_params)
+write_performance_to_file(
+    "Top-DT", top_dt_predictions, target_test, best_params=best_params
+)
 write_performance_to_file("Base-MLP", base_mlp_predictions, target_test)
-write_performance_to_file("Top-MLP", top_mlp_predictions, target_test, best_params=mlp_best_params)
+write_performance_to_file(
+    "Top-MLP", top_mlp_predictions, target_test, best_params=mlp_best_params
+)
 
 # ---- ABALONE ----
+
 
 # Function to convert categorical columns to one-hot encoded columns
 def convert_to_one_hot(df, categorical_columns):
@@ -170,3 +197,42 @@ plot_tree(
     max_depth=5,
 )
 plt.show()
+
+#  ---- Top Decision Tree ---- #
+
+param_grid = {
+    "criterion": ["gini", "entropy"],
+    "max_depth": [None, 5, 10],  # Assuming 5 and 10 as the two values of choice
+    "min_samples_split": [
+        2,
+        5,
+        10,
+    ],  # Assuming 2, 5, and 10 as the three values of choice
+}
+
+grid_search = GridSearchCV(DecisionTreeClassifier(), param_grid, cv=5)
+grid_search.fit(features_train_abalone, target_train_abalone)
+
+# Print best parameters
+print("Best hyperparameters for Top-DT:", grid_search.best_params_)
+
+# Visualize the best decision tree (Top-DT)
+best_tree = grid_search.best_estimator_
+plt.figure(figsize=(20, 10))
+plot_tree(
+    best_tree,
+    filled=True,
+    feature_names=features_abalone.columns,
+    class_names=best_tree.classes_,
+    rounded=True,
+    max_depth=5,  # Restricting depth for visualization
+)
+plt.show()
+
+# ---- Base MLP ---- #
+
+clf_base_mlp = MLPClassifier(
+    hidden_layer_sizes=(100, 100), activation="logistic", solver="sgd"
+)
+clf_base_mlp.fit(features_train_abalone, target_train_abalone)
+base_mlp_pred = clf_base_mlp.predict(features_test_abalone)
