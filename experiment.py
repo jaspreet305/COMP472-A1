@@ -160,11 +160,9 @@ write_performance_to_file(
 
 # ---- ABALONE ----
 
-
 # Function to convert categorical columns to one-hot encoded columns
 def convert_to_one_hot(df, categorical_columns):
     return pd.get_dummies(df, columns=categorical_columns, dtype=int)
-
 
 # Abalone Data Preprocessing
 abalone_df = pd.read_csv("abalone.csv")
@@ -202,22 +200,22 @@ plt.show()
 
 param_grid = {
     "criterion": ["gini", "entropy"],
-    "max_depth": [None, 5, 10],  # Assuming 5 and 10 as the two values of choice
+    "max_depth": [None, 5, 10],
     "min_samples_split": [
         2,
         5,
         10,
-    ],  # Assuming 2, 5, and 10 as the three values of choice
+    ],
 }
 
-grid_search = GridSearchCV(DecisionTreeClassifier(), param_grid, cv=5)
-grid_search.fit(features_train_abalone, target_train_abalone)
+grid_search_dt = GridSearchCV(DecisionTreeClassifier(), param_grid, cv=5)
+grid_search_dt.fit(features_train_abalone, target_train_abalone)
+best_tree = grid_search.best_estimator_
 
-# Print best parameters
+top_dt_pred = best_tree.predict(features_test)
+
 print("Best hyperparameters for Top-DT:", grid_search.best_params_)
 
-# Visualize the best decision tree (Top-DT)
-best_tree = grid_search.best_estimator_
 plt.figure(figsize=(20, 10))
 plot_tree(
     best_tree,
@@ -225,7 +223,7 @@ plot_tree(
     feature_names=features_abalone.columns,
     class_names=best_tree.classes_,
     rounded=True,
-    max_depth=5,  # Restricting depth for visualization
+    max_depth=5,
 )
 plt.show()
 
@@ -236,3 +234,66 @@ clf_base_mlp = MLPClassifier(
 )
 clf_base_mlp.fit(features_train_abalone, target_train_abalone)
 base_mlp_pred = clf_base_mlp.predict(features_test_abalone)
+
+# ---- Top MLP ---- #
+
+mlp_param_grid = {
+    "activation": ["logistic", "tanh", "relu"],
+    "hidden_layer_sizes": [(30, 50), (10, 10, 10)],
+    "solver": ["adam", "sgd"],
+}
+
+grid_search_mlp = GridSearchCV(MLPClassifier(), mlp_param_grid, cv=5)
+grid_search_mlp.fit(features_train_abalone, target_train_abalone)
+top_mlp_pred = grid_search_mlp.best_estimator_.predict(features_test_abalone)
+print("Best MLP hyperparameters:", grid_search_mlp.best_params_)
+
+def write_performance_to_file_abalone(
+    model_name,
+    predictions,
+    true_values,
+    best_params=None,
+    filename="abalone-performance.txt",
+):
+    with open(filename, "a") as file:
+        file.write("- - - - -" * 20 + "\n")
+        file.write(f"\n[A]\nModel: {model_name}\n")
+
+        # for top-DT and top-MLP
+        if best_params:
+            file.write(f"Best Parameters: {best_params}\n")
+
+        file.write("\n[B]\nConfusion Matrix:\n")
+        confusion = confusion_matrix(true_values, predictions)
+        file.write(str(confusion) + "\n")
+
+        report = classification_report(true_values, predictions, output_dict=True)
+        file.write("\n[C]\nPrecision, Recall, F1-measure for each class:\n")
+        for label, metrics in report.items():
+            if label not in ["accuracy", "macro avg", "weighted avg"]:
+                file.write(
+                    f"Class {label} - Precision: {metrics['precision']:.2f}, Recall: {metrics['recall']:.2f}, F1-measure: {metrics['f1-score']:.2f}\n"
+                )
+
+        file.write("\n[D]\nModel-wide Metrics:\n")
+        file.write(f"Accuracy: {report['accuracy']:.2f}\n")
+        file.write(f"Macro-average F1: {report['macro avg']['f1-score']:.2f}\n")
+        file.write(f"Weighted-average F1: {report['weighted avg']['f1-score']:.2f}\n\n")
+
+# Evaluate models
+write_performance_to_file_abalone("Base-DT", base_dt_pred, target_test_abalone)
+write_performance_to_file_abalone(
+    "Top-DT",
+    top_dt_pred,
+    target_test_abalone,
+    best_params=grid_search.best_params_,
+)
+
+write_performance_to_file_abalone("Base-MLP", base_mlp_pred, target_test_abalone)
+
+write_performance_to_file_abalone(
+    "Top-MLP",
+    top_mlp_pred,
+    target_test_abalone,
+    best_params=grid_search_mlp.best_params_,
+)
