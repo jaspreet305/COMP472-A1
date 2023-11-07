@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
@@ -149,14 +150,14 @@ def write_performance_to_file(
         file.write(f"Weighted-average F1: {report['weighted avg']['f1-score']:.2f}\n\n")
 
 
-write_performance_to_file("Base-DT", base_dt_predictions, target_test)
-write_performance_to_file(
-    "Top-DT", top_dt_predictions, target_test, best_params=best_params
-)
-write_performance_to_file("Base-MLP", base_mlp_predictions, target_test)
-write_performance_to_file(
-    "Top-MLP", top_mlp_predictions, target_test, best_params=mlp_best_params
-)
+# write_performance_to_file("Base-DT", base_dt_predictions, target_test)
+# write_performance_to_file(
+#     "Top-DT", top_dt_predictions, target_test, best_params=best_params
+# )
+# write_performance_to_file("Base-MLP", base_mlp_predictions, target_test)
+# write_performance_to_file(
+#     "Top-MLP", top_mlp_predictions, target_test, best_params=mlp_best_params
+# )
 
 # ---- ABALONE ----
 
@@ -185,16 +186,16 @@ clf_base_dt.fit(features_train_abalone, target_train_abalone)
 base_dt_pred = clf_base_dt.predict(features_test_abalone)
 
 # Visualization for Base-DT
-plt.figure(figsize=(20, 10))
-plot_tree(
-    clf_base_dt,
-    filled=True,
-    feature_names=features_abalone.columns,
-    class_names=clf_base_dt.classes_,
-    rounded=True,
-    max_depth=5,
-)
-plt.show()
+# plt.figure(figsize=(20, 10))
+# plot_tree(
+#     clf_base_dt,
+#     filled=True,
+#     feature_names=features_abalone.columns,
+#     class_names=clf_base_dt.classes_,
+#     rounded=True,
+#     max_depth=5,
+# )
+# plt.show()
 
 #  ---- Top Decision Tree ---- #
 
@@ -216,16 +217,16 @@ top_dt_pred = best_tree.predict(features_test)
 
 print("Best hyperparameters for Top-DT:", grid_search.best_params_)
 
-plt.figure(figsize=(20, 10))
-plot_tree(
-    best_tree,
-    filled=True,
-    feature_names=features_abalone.columns,
-    class_names=best_tree.classes_,
-    rounded=True,
-    max_depth=5,
-)
-plt.show()
+# plt.figure(figsize=(20, 10))
+# plot_tree(
+#     best_tree,
+#     filled=True,
+#     feature_names=features_abalone.columns,
+#     class_names=best_tree.classes_,
+#     rounded=True,
+#     max_depth=5,
+# )
+# plt.show()
 
 # ---- Base MLP ---- #
 
@@ -281,19 +282,72 @@ def write_performance_to_file_abalone(
         file.write(f"Weighted-average F1: {report['weighted avg']['f1-score']:.2f}\n\n")
 
 # Evaluate models
-write_performance_to_file_abalone("Base-DT", base_dt_pred, target_test_abalone)
-write_performance_to_file_abalone(
-    "Top-DT",
-    top_dt_pred,
-    target_test_abalone,
-    best_params=grid_search.best_params_,
-)
+# write_performance_to_file_abalone("Base-DT", base_dt_pred, target_test_abalone)
+# write_performance_to_file_abalone(
+#     "Top-DT",
+#     top_dt_pred,
+#     target_test_abalone,
+#     best_params=grid_search.best_params_,
+# )
 
-write_performance_to_file_abalone("Base-MLP", base_mlp_pred, target_test_abalone)
+# write_performance_to_file_abalone("Base-MLP", base_mlp_pred, target_test_abalone)
 
-write_performance_to_file_abalone(
-    "Top-MLP",
-    top_mlp_pred,
-    target_test_abalone,
-    best_params=grid_search_mlp.best_params_,
-)
+# write_performance_to_file_abalone(
+#     "Top-MLP",
+#     top_mlp_pred,
+#     target_test_abalone,
+#     best_params=grid_search_mlp.best_params_,
+# )
+
+def write_performance_to_file_6(
+    model_name,
+    accuracy_avg,
+    accuracy_var,
+    macro_f1_avg,
+    macro_f1_var,
+    weighted_f1_avg,
+    weighted_f1_var,
+    filename="penguin-performance.txt",
+):
+    with open(filename, "a") as file:
+        file.write("- - - - -" * 20 + "\n")
+        file.write(f"\n[A]\nModel: {model_name}\n")
+        file.write(f"\nAverage Accuracy: {accuracy_avg:.2f}\n")
+        file.write(f"Accuracy Variance: {accuracy_var:.2f}\n")
+        file.write(f"\nAverage Macro-average F1: {macro_f1_avg:.2f}\n")
+        file.write(f"Macro-average F1 Variance: {macro_f1_var:.2f}\n")
+        file.write(f"\nAverage Weighted-average F1: {weighted_f1_avg:.2f}\n")
+        file.write(f"Weighted-average F1 Variance: {weighted_f1_var:.2f}\n")
+
+# Define a function to evaluate the model and return the required metrics
+def evaluate_model(model, features_train, target_train, features_test, target_test):
+    # Train the model
+    model.fit(features_train, target_train)
+    # Predict on the test set
+    predictions = model.predict(features_test)
+    # Calculate metrics
+    accuracy = accuracy_score(target_test, predictions)
+    report = classification_report(target_test, predictions, output_dict=True)
+    macro_f1 = report['macro avg']['f1-score']
+    weighted_f1 = report['weighted avg']['f1-score']
+    return accuracy, macro_f1, weighted_f1
+
+# Define a function to perform the evaluations 5 times and calculate averages and variances
+def perform_evaluations(model, features_train, target_train, features_test, target_test):
+    accuracies, macro_f1s, weighted_f1s = [], [], []
+    for _ in range(5):
+        accuracy, macro_f1, weighted_f1 = evaluate_model(model, features_train, target_train, features_test, target_test)
+        accuracies.append(accuracy)
+        macro_f1s.append(macro_f1)
+        weighted_f1s.append(weighted_f1)
+    # Calculate average and variance for each metric
+    accuracy_avg, accuracy_var = np.mean(accuracies), np.var(accuracies)
+    macro_f1_avg, macro_f1_var = np.mean(macro_f1s), np.var(macro_f1s)
+    weighted_f1_avg, weighted_f1_var = np.mean(weighted_f1s), np.var(weighted_f1s)
+    return accuracy_avg, accuracy_var, macro_f1_avg, macro_f1_var, weighted_f1_avg, weighted_f1_var
+
+# Example usage for Base-DT
+accuracy_avg, accuracy_var, macro_f1_avg, macro_f1_var, weighted_f1_avg, weighted_f1_var = perform_evaluations(base_dt, features_train, target_train, features_test, target_test)
+
+# Append the results to the performance file
+write_performance_to_file_6("Base-DT", accuracy_avg, accuracy_var, macro_f1_avg, macro_f1_var, weighted_f1_avg, weighted_f1_var)
